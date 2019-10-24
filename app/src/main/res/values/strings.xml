@@ -1,0 +1,7 @@
+<resources>
+    <string name="app_name">PlaceBook</string>
+    <string name="title_activity_maps">Map</string>
+    <string name="place_title">Place Title</string>
+    <string name="number">555-121-1212</string>
+    <string name="bookmark_image">Bookmark image</string>
+</resources>
