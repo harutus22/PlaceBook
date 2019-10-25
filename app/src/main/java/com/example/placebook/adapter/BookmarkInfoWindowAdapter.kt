@@ -7,10 +7,11 @@ import android.widget.ImageView
 import android.widget.TextView
 import com.example.placebook.R
 import com.example.placebook.ui.MapsActivity
+import com.example.placebook.viewmodel.MapsViewModel
 import com.google.android.gms.maps.GoogleMap
 import com.google.android.gms.maps.model.Marker
 
-class BookmarkInfoWindowAdapter(context: Activity): GoogleMap.InfoWindowAdapter {
+class BookmarkInfoWindowAdapter(val context: Activity): GoogleMap.InfoWindowAdapter {
     private val contents: View
 
     init {
@@ -22,7 +23,14 @@ class BookmarkInfoWindowAdapter(context: Activity): GoogleMap.InfoWindowAdapter 
         titleView.text = p0.title ?: ""
 
         val imageView = contents.findViewById<ImageView>(R.id.photo)
-        imageView.setImageBitmap((p0.tag as MapsActivity.PlaceInfo).image)
+        when(p0.tag){
+            is MapsActivity.PlaceInfo -> imageView.setImageBitmap((p0.tag as MapsActivity.PlaceInfo).image)
+            is MapsViewModel.BookmarkMarkerView -> {
+                val bookmarkView = p0.tag as MapsViewModel.BookmarkMarkerView
+                imageView.setImageBitmap(bookmarkView.getImage(context))
+            }
+        }
+
 
         val titlePhone = contents.findViewById<TextView>(R.id.phone)
         titlePhone.text = p0.snippet ?: ""

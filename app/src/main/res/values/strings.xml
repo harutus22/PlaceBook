@@ -4,4 +4,11 @@
     <string name="place_title">Place Title</string>
     <string name="number">555-121-1212</string>
     <string name="bookmark_image">Bookmark image</string>
+    <string name="name">Name</string>
+    <string name="notes">Notes</string>
+    <string name="enter_notes">Enter notes</string>
+    <string name="phone">Phone</string>
+    <string name="phone_number">Phone number</string>
+    <string name="address">Address</string>
+    <string name="save">Save</string>
 </resources>
