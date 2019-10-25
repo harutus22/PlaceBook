@@ -9,7 +9,7 @@ import com.example.placebook.model.Bookmark
 
 @Dao
 interface BookmarkDao {
-    @Query("SELECT * FROM bookmark")
+    @Query("SELECT * FROM bookmark ORDER BY name")
     fun getAll(): LiveData<List<Bookmark>>
 
     @Query("SELECT * FROM bookmark WHERE id = :bookmarkId")

@@ -15,7 +15,7 @@ import com.google.android.libraries.places.api.model.Place
 
 class MapsViewModel(app: Application) : AndroidViewModel(app){
     private val TAG = "MapsViewModel"
-    private var bookmarks: LiveData<List<BookmarkMarkerView>>? = null
+    private var bookmarks: LiveData<List<BookmarkView>>? = null
 
     private var bookmarkRepo: BookmarkRepo = BookmarkRepo(app)
 
@@ -37,27 +37,27 @@ class MapsViewModel(app: Application) : AndroidViewModel(app){
         }
     }
 
-    private fun bookmarkToMarkerView(bookMark: Bookmark): BookmarkMarkerView{
-        return BookmarkMarkerView(bookMark.id, LatLng(bookMark.latitude, bookMark.longitude),
+    private fun bookmarkToBookmarkView(bookMark: Bookmark): BookmarkView{
+        return BookmarkView(bookMark.id, LatLng(bookMark.latitude, bookMark.longitude),
             bookMark.name, bookMark.phone)
     }
 
-    private fun mapBookmarksToMarkerView(){
+    private fun mapBookmarksToBookmarkView(){
         bookmarks = Transformations.map(bookmarkRepo.allBookmarks){ bookmarkRepo ->
             bookmarkRepo.map {bookmark ->
-                bookmarkToMarkerView(bookmark)
+                bookmarkToBookmarkView(bookmark)
             }
         }
     }
 
-    fun getBookmarkMarkerViews(): LiveData<List<BookmarkMarkerView>>?{
+    fun getBookmarkViews(): LiveData<List<BookmarkView>>?{
         if(bookmarks == null)
-            mapBookmarksToMarkerView()
+            mapBookmarksToBookmarkView()
         return bookmarks
     }
 
-    data class BookmarkMarkerView(var id: Long? = null, var location: LatLng = LatLng(0.0, 0.0),
-                                  var name: String = "", var phone: String = ""){
+    data class BookmarkView(var id: Long? = null, var location: LatLng = LatLng(0.0, 0.0),
+                            var name: String = "", var phone: String = ""){
         fun getImage(context: Context): Bitmap?{
             id?.let {
                 return ImageUtils.loadImageFromFile(context, Bookmark.generateImageFileName(it))

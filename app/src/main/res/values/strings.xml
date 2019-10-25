@@ -11,4 +11,8 @@
     <string name="phone_number">Phone number</string>
     <string name="address">Address</string>
     <string name="save">Save</string>
+    <string name="placebook">PlaceBook</string>
+    <string name="example_com">example.com</string>
+    <string name="open_drawer">Open Drawer</string>
+    <string name="close_drawer">Close Drawer</string>
 </resources>
