@@ -15,4 +15,6 @@
     <string name="example_com">example.com</string>
     <string name="open_drawer">Open Drawer</string>
     <string name="close_drawer">Close Drawer</string>
+    <string name="category">Category</string>
+    <string name="delete">Delete</string>
 </resources>

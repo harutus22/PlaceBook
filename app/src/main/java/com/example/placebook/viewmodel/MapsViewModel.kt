@@ -29,6 +29,8 @@ class MapsViewModel(app: Application) : AndroidViewModel(app){
             phone = place.phoneNumber.toString()
             address = place.address.toString()
 
+            bookmark.category = getPlaceCategory(place)
+
             val newId = bookmarkRepo.addBookmark(bookmark)
             image?.let{
                 bookmark.setImage(it, getApplication())
@@ -39,7 +41,7 @@ class MapsViewModel(app: Application) : AndroidViewModel(app){
 
     private fun bookmarkToBookmarkView(bookMark: Bookmark): BookmarkView{
         return BookmarkView(bookMark.id, LatLng(bookMark.latitude, bookMark.longitude),
-            bookMark.name, bookMark.phone)
+            bookMark.name, bookMark.phone, bookmarkRepo.getCategoryResourceId(bookMark.category))
     }
 
     private fun mapBookmarksToBookmarkView(){
@@ -56,13 +58,34 @@ class MapsViewModel(app: Application) : AndroidViewModel(app){
         return bookmarks
     }
 
+    fun addBookmark(latLng: LatLng): Long?{
+        val bookmark = bookmarkRepo.createBookmark()
+        bookmark.name = "Untitled"
+        bookmark.longitude = latLng.longitude
+        bookmark.latitude = latLng.latitude
+        bookmark.category = "Other"
+        return bookmarkRepo.addBookmark(bookmark)
+    }
+
     data class BookmarkView(var id: Long? = null, var location: LatLng = LatLng(0.0, 0.0),
-                            var name: String = "", var phone: String = ""){
+                            var name: String = "", var phone: String = "",
+                            var categoryResourceId: Int? = null){
         fun getImage(context: Context): Bitmap?{
             id?.let {
                 return ImageUtils.loadImageFromFile(context, Bookmark.generateImageFileName(it))
             }
             return null
         }
+    }
+
+    private fun getPlaceCategory(place: Place): String{
+        var category = "Other"
+        val placeTypes = place.types
+
+        if (placeTypes!!.size > 0){
+            val placeCategory = placeTypes[0]
+            category = bookmarkRepo.placeTypeToCategory(placeCategory)
+        }
+        return category
     }
 }

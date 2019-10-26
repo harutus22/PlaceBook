@@ -1,6 +1,7 @@
 package com.example.placebook.ui
 
 import android.Manifest
+import android.app.Activity
 import android.content.Intent
 import android.content.pm.PackageManager
 import android.graphics.Bitmap
@@ -8,6 +9,8 @@ import android.location.Location
 import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
 import android.util.Log
+import android.view.WindowManager
+import android.widget.ProgressBar
 import androidx.appcompat.app.ActionBarDrawerToggle
 import androidx.core.app.ActivityCompat
 import androidx.lifecycle.Observer
@@ -17,6 +20,8 @@ import com.example.placebook.R
 import com.example.placebook.adapter.BookmarkInfoWindowAdapter
 import com.example.placebook.adapter.BookmarkListAdapter
 import com.example.placebook.viewmodel.MapsViewModel
+import com.google.android.gms.common.GooglePlayServicesNotAvailableException
+import com.google.android.gms.common.GooglePlayServicesRepairableException
 import com.google.android.gms.common.api.ApiException
 import com.google.android.gms.location.*
 
@@ -27,9 +32,12 @@ import com.google.android.gms.maps.SupportMapFragment
 import com.google.android.gms.maps.model.*
 import com.google.android.libraries.places.api.Places
 import com.google.android.libraries.places.api.model.Place
+import com.google.android.libraries.places.api.model.RectangularBounds
 import com.google.android.libraries.places.api.net.FetchPhotoRequest
 import com.google.android.libraries.places.api.net.FetchPlaceRequest
 import com.google.android.libraries.places.api.net.PlacesClient
+import com.google.android.libraries.places.widget.Autocomplete
+import com.google.android.libraries.places.widget.model.AutocompleteActivityMode
 import kotlinx.android.synthetic.main.activity_maps.*
 import kotlinx.android.synthetic.main.drawer_view_maps.*
 import kotlinx.android.synthetic.main.main_view_maps.*
@@ -47,6 +55,7 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback {
 
     companion object {
         private const val REQUEST_LOCATION = 1
+        private const val AUTOCOMPLETE_REQUEST_CODE = 2
         private const val TAG = "MapsActivity"
         const val EXTRA_BOOKMARK_ID = "com.example.placebook.EXTRA_BOOKMARK_ID"
     }
@@ -90,6 +99,12 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback {
         mMap.setOnInfoWindowClickListener {
             handleInfoWindowClick(it)
         }
+        fab.setOnClickListener {
+            searchAtCurrentLocation()
+        }
+        mMap.setOnMapLongClickListener { latLng ->
+            newBookmark(latLng)
+        }
     }
 
     private fun requestLocationPermission() {
@@ -121,6 +136,7 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback {
     }
 
     private fun displayPoi(pointOfInterest: PointOfInterest) {
+        showProgress()
         displayPoiGetPlaceStep(pointOfInterest)
     }
 
@@ -139,11 +155,13 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback {
             if (exception is ApiException) {
                 val statusCode = exception.statusCode
                 Log.e(TAG, "Place not found: ${exception.message}, status code: $statusCode")
+                hideProgress()
             }
         }
     }
 
     private fun displayPoiDisplayStep(place: Place, photo: Bitmap?) {
+        hideProgress()
         val marker = mMap.addMarker(
             MarkerOptions().position(place.latLng as LatLng)
                 .title(place.name).snippet(place.phoneNumber)
@@ -166,6 +184,7 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback {
             if (exception is ApiException) {
                 val statusCode = exception.statusCode
                 Log.e(TAG, "Place not found ${exception.message}, status code: $statusCode ")
+                hideProgress()
             }
         }
     }
@@ -234,7 +253,7 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback {
     private fun addPlaceMarker(bookmark: MapsViewModel.BookmarkView): Marker {
         val marker = mMap.addMarker(
             MarkerOptions().position(bookmark.location).title(bookmark.name).snippet(bookmark.phone).icon(
-                BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_AZURE)
+                bookmark.categoryResourceId?.let { BitmapDescriptorFactory.fromResource(it) }
             ).alpha(0.8f)
         )
         marker.tag = bookmark
@@ -260,6 +279,29 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback {
             })
     }
 
+    private fun searchAtCurrentLocation(){
+        val placeFields = listOf(
+            Place.Field.ID,
+            Place.Field.NAME,
+            Place.Field.PHONE_NUMBER,
+            Place.Field.PHOTO_METADATAS,
+            Place.Field.LAT_LNG,
+            Place.Field.ADDRESS,
+            Place.Field.TYPES)
+
+        val bounds = RectangularBounds.newInstance(mMap.projection.visibleRegion.latLngBounds)
+        try {
+            val intent = Autocomplete.IntentBuilder(AutocompleteActivityMode.OVERLAY, placeFields)
+                .setLocationBias(bounds).build(this)
+            startActivityForResult(intent, AUTOCOMPLETE_REQUEST_CODE)
+        } catch (e: GooglePlayServicesRepairableException){
+
+        }
+        catch (e: GooglePlayServicesNotAvailableException){
+
+        }
+    }
+
     private fun updateMapToLocation(location: Location){
         val latlng = LatLng(location.latitude, location.longitude)
         mMap.animateCamera(CameraUpdateFactory.newLatLngZoom(latlng, 16f))
@@ -275,6 +317,49 @@ class MapsActivity : AppCompatActivity(), OnMapReadyCallback {
         location.latitude = bookmark.location.latitude
         location.longitude = bookmark.location.longitude
         updateMapToLocation(location)
+    }
+
+    private fun newBookmark(latLng: LatLng){
+        GlobalScope.launch {
+            val bookmarkId = mapsViewModel.addBookmark(latLng)
+            bookmarkId?.let { startBookmarkDetails(bookmarkId) }
+        }
+    }
+
+    private fun disableUserInteraction(){
+        window.setFlags(WindowManager.LayoutParams.FLAG_NOT_TOUCHABLE,
+            WindowManager.LayoutParams.FLAG_NOT_TOUCHABLE)
+    }
+
+    private fun enableUserInteraction(){
+        window.clearFlags(WindowManager.LayoutParams.FLAG_NOT_TOUCHABLE)
+    }
+
+    private fun showProgress(){
+        progressBar.visibility = ProgressBar.VISIBLE
+        disableUserInteraction()
+    }
+
+    private fun hideProgress(){
+        progressBar.visibility = ProgressBar.GONE
+        enableUserInteraction()
+    }
+
+    override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
+        super.onActivityResult(requestCode, resultCode, data)
+        when(requestCode){
+            AUTOCOMPLETE_REQUEST_CODE ->{
+                if(resultCode == Activity.RESULT_OK && data != null){
+                    val place = Autocomplete.getPlaceFromIntent(data)
+                    val location = Location("")
+                    location.latitude = place.latLng?.latitude ?: 0.0
+                    location.longitude = place.latLng?.longitude ?: 0.0
+                    updateMapToLocation(location)
+                    showProgress()
+                    displayPoiGetPhotoStep(place)
+                }
+            }
+        }
     }
 
     class PlaceInfo(val place: Place? = null, val image: Bitmap? = null)

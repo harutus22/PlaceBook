@@ -44,7 +44,7 @@ class BookmarkListAdapter(private var bookmarkData: List<MapsViewModel.BookmarkV
         val bookMarkViewData = bookmarkData[position]
         holder.itemView.tag = bookMarkViewData
         holder.nameTextView.text = bookMarkViewData.name
-        holder.categoryImageView.setImageResource(R.drawable.ic_place_black)
+        bookMarkViewData.categoryResourceId?.
+            let { holder.categoryImageView.setImageResource(it) }
     }
-
 }

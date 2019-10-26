@@ -85,6 +85,7 @@ object ImageUtils {
                     return bitmap
                 }
             }
+            return null
         } catch (e: Exception){
             return null
         } finally {
